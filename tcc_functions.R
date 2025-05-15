@@ -21,7 +21,7 @@ palette_list <- function(name){
   df <- list("indigo" = c("#4250AF","#5F6BBB","#7C85C6","#A0A7D6", "#C6CAE6"),
              "red" = c("#D3493F","#DE5E56", "#D77976", "#E39E9C", "#F7CFD3"),
              "blue" = c("#4286DE", "#5EA3EE", "#77B3F1", "#9DC8F5", "#C2DDF8"),
-             "usual" = c("#6E45A8","#D3493F", "#EA7100", "#34D33C"))
+             "usual" = c("#6E45A8","#D3493F", "#EA7100", "#34D33C","#4286DE","#000"))
   return(df[[name]])
 }
 
@@ -89,10 +89,66 @@ create_seas_col <- function(data,
   return(data)
 }
 
+hp_filter <- function(data,
+                      freq=c("m","q","y")){
+  
+  #Filtro Hodrick-Prescott parametrizado conforme Ravn & Uhlig (2002)
+  
+  start = min(data$date)
+  end = max(data$date)
+  
+  if(freq=="m"){
+    lambda = 129600
+    data.ts <- data %>% 
+      dplyr::select(-date) %>% 
+      ts(.,
+         start = c(year(start), month(start)),
+         end = c(year(end), month(end)),
+         frequency = 12)
+    
+    filter <- mFilter::hpfilter(data.ts, freq=lambda, type="lambda")
+    
+    result <- tibble(date = seq.Date(from=start, to=end, by="month"),
+                     value = filter$cycle)
+    
+  }
+  
+  if(freq=="q"){
+    lambda = 1600
+    data.ts <- data %>% 
+      dplyr::select(-date) %>% 
+      ts(.,
+         start = c(year(start), quarter(start)),
+         end = c(year(end), quarter(end)),
+         frequency = 4)
+    
+    filter <- mFilter::hpfilter(data.ts, freq=lambda, type="lambda")
+    
+    result <- tibble(date = seq.Date(from=start, to=end, by="quarter"),
+                     value = filter$cycle)
+  }
+  
+  if(freq=="y"){
+    lambda = 6.25
+    data.ts <- data %>% 
+      dplyr::select(-date) %>% 
+      ts(.,
+         start = c(year(start)),
+         end = c(year(end)),
+         frequency = 1)
+    
+    filter <- mFilter::hpfilter(data.ts, freq=lambda, type="lambda")
+    
+    result <- tibble(date = seq.Date(from=start, to=end, by="year"),
+                     value = filter$cycle)
+  }
+
+  return(result)
+  
+}
+
+
 
 font_import()
 y
 loadfonts(device="win")
-
-
-
